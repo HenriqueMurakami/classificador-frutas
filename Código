@@ -1,16 +1,17 @@
 # ========== INSTALAÇÃO E IMPORTAÇÕES ==========
 !pip install --upgrade pillow scikit-image --quiet
-!pip install fastai ipywidgets --quiet
+!pip install fastai ipywidgets --quiet #biblioteca de deep learning que simplifica o treinamento de modelos
 
 from fastai.vision.all import *
 from pathlib import Path
 from google.colab import drive
 from ipywidgets import widgets
 from IPython.display import display, clear_output
-import PIL
+import PIL #Biblioteca para manipulação de imagens em Python
 from PIL import Image, ImageFile
 import warnings
 
+# Configurações para evitar erros
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 warnings.filterwarnings('ignore', category=UserWarning)
 
@@ -19,8 +20,11 @@ drive.mount('/content/drive')
 
 # ========== CONFIGURAÇÃO DO DATASET ==========
 path = Path('/content/drive/MyDrive/frutas_dataset')
+# Formatos suportados (apenas JPG e PNG)
 FORMATOS_SUPORTADOS = ['.jpg', '.jpeg', '.png']
 
+# Função otimizada para verificar imagens
+# Função responsável por validar se um arquivo é uma imagem, verificando sua extensão e tentando realizar a abertura do arquivo
 def verificar_imagem(img_path):
     try:
         if img_path.suffix.lower() not in FORMATOS_SUPORTADOS:
@@ -31,6 +35,8 @@ def verificar_imagem(img_path):
     except Exception as e:
         return False
 
+# Processamento do dataset com relatório detalhado
+#Verifica a qualidade do dataset, se esta tudo certo para rodar
 print("🔍 Analisando e carregando dataset de frutas...")
 print(f"📌 Formatos suportados: {', '.join(FORMATOS_SUPORTADOS)}")
 
@@ -56,6 +62,12 @@ for folder in path.ls():
             display(img)
 
 # ========== CRIAÇÃO DO MODELO ==========
+#Aqui, de fato, os dados são preparados para o treinamento.
+#learn - modelo é criado e treinado.
+#resnet18: arquitetura da rede neural pré-treinada.
+#fine_tune(10): realiza o treinamento do modelo em ciclos
+#error_rate: calcula a taxa de erro do modelo.
+
 try:
     dls = ImageDataLoaders.from_folder(
         path,
@@ -76,8 +88,9 @@ except Exception as e:
     raise
 
 # ========== DICIONÁRIO DE INFORMAÇÕES NUTRICIONAIS ==========
+# Informa a tabela nutricional de acordo com a fruta classificada
 info_frutas = {
-    "maça": "🍎 A maçã é rica em vitaminas do complexo B (B1, B2, B6), vitamina C e antioxidantes.",
+    "maca": "🍎 A maçã é rica em vitaminas do complexo B (B1, B2, B6), vitamina C e antioxidantes.",
     "banana": "🍌 A banana é uma excelente fonte de potássio, vitamina B6 e vitamina C.",
     "uva": "🍇 A uva contém vitamina C, vitamina K e antioxidantes como o resveratrol.",
     "limao": "🍋 O limão é extremamente rico em vitamina C e também contém vitaminas do complexo B."
@@ -91,16 +104,18 @@ def processar_upload(change):
         clear_output()
         if change['new']:
             try:
+                # Carrega e exibe a imagem    
                 img = PILImage.create(change['owner'].data[0])
                 display(img.resize((300, 300)))
-
+                # Predição
                 pred, _, prob = learn.predict(img)
                 confianca = prob.max().item() * 100
-
+                # Exibe resultados
                 print("🔬 Resultado da Análise:")
                 print(f"🍓 Fruta: {pred}")
                 print(f"📈 Confiança: {confianca:.1f}%")
 
+                # Dicas visuais
                 if confianca > 90:
                     print("✅ Confiança excelente: A identificação foi feita com alta precisão. Pode confiar no resultado!")
                 elif confianca > 70:
@@ -121,12 +136,14 @@ def processar_upload(change):
             except Exception as e:
                 print(f"⚠️ Erro: {str(e)}")
 
+# Configuração do widget de upload
 uploader = widgets.FileUpload(
     description='Selecionar',
     multiple=False
 )
 uploader.observe(processar_upload, names='data')
 
+# Exibição da interface
 display(widgets.VBox([
     widgets.HTML("<h3 style='color:white'>🍉 Classificador de Frutas 🍌</h3>"),
     widgets.Label("Envie uma foto de fruta para análise:"),
