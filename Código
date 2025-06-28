@@ -1,0 +1,137 @@
+# ========== INSTALAÇÃO E IMPORTAÇÕES ==========
+!pip install --upgrade pillow scikit-image --quiet
+!pip install fastai ipywidgets --quiet
+
+from fastai.vision.all import *
+from pathlib import Path
+from google.colab import drive
+from ipywidgets import widgets
+from IPython.display import display, clear_output
+import PIL
+from PIL import Image, ImageFile
+import warnings
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+warnings.filterwarnings('ignore', category=UserWarning)
+
+# ========== CONEXÃO COM GOOGLE DRIVE ==========
+drive.mount('/content/drive')
+
+# ========== CONFIGURAÇÃO DO DATASET ==========
+path = Path('/content/drive/MyDrive/frutas_dataset')
+FORMATOS_SUPORTADOS = ['.jpg', '.jpeg', '.png']
+
+def verificar_imagem(img_path):
+    try:
+        if img_path.suffix.lower() not in FORMATOS_SUPORTADOS:
+            return False
+        with Image.open(img_path) as img:
+            img.verify()
+            return True
+    except Exception as e:
+        return False
+
+print("🔍 Analisando e carregando dataset de frutas...")
+print(f"📌 Formatos suportados: {', '.join(FORMATOS_SUPORTADOS)}")
+
+for folder in path.ls():
+    if folder.is_dir():
+        validas, invalidas = [], []
+        for ext in FORMATOS_SUPORTADOS:
+            for img_path in folder.glob(f'*{ext}'):
+                if verificar_imagem(img_path):
+                    validas.append(img_path)
+                else:
+                    invalidas.append(img_path.name)
+        
+        print(f"\n📁 {folder.name}:")
+        print(f"✅ {len(validas)} amostras de imagens extraídas do dataset")
+        if invalidas:
+            print(f"❌ {len(invalidas)} arquivos problemáticos")
+            print(f"   Exemplos: {', '.join(invalidas[:3])}" + 
+                 ("..." if len(invalidas) > 3 else ""))
+        
+        if validas:
+            img = PILImage.create(validas[0]).resize((200, 200))
+            display(img)
+
+# ========== CRIAÇÃO DO MODELO ==========
+try:
+    dls = ImageDataLoaders.from_folder(
+        path,
+        train=".",
+        valid_pct=0.2,
+        item_tfms=Resize(460),
+        batch_tfms=aug_transforms(size=224),
+        bs=8,
+        extensions=FORMATOS_SUPORTADOS
+    )
+    
+    learn = vision_learner(dls, resnet18, metrics=error_rate)
+    print("\n🎯 Iniciando processo de treinamento do modelo de aprendizado, fundamentado nos rótulos e imagens presentes no dataset....")
+    learn.fine_tune(10)
+    
+except Exception as e:
+    print(f"\n❌ Erro ao criar modelo: {str(e)}")
+    raise
+
+# ========== DICIONÁRIO DE INFORMAÇÕES NUTRICIONAIS ==========
+info_frutas = {
+    "maça": "🍎 A maçã é rica em vitaminas do complexo B (B1, B2, B6), vitamina C e antioxidantes.",
+    "banana": "🍌 A banana é uma excelente fonte de potássio, vitamina B6 e vitamina C.",
+    "uva": "🍇 A uva contém vitamina C, vitamina K e antioxidantes como o resveratrol.",
+    "limao": "🍋 O limão é extremamente rico em vitamina C e também contém vitaminas do complexo B."
+}
+
+# ========== INTERFACE DE TESTE ==========
+out = widgets.Output()
+
+def processar_upload(change):
+    with out:
+        clear_output()
+        if change['new']:
+            try:
+                img = PILImage.create(change['owner'].data[0])
+                display(img.resize((300, 300)))
+
+                pred, _, prob = learn.predict(img)
+                confianca = prob.max().item() * 100
+
+                print("🔬 Resultado da Análise:")
+                print(f"🍓 Fruta: {pred}")
+                print(f"📈 Confiança: {confianca:.1f}%")
+
+                if confianca > 90:
+                    print("✅ Confiança excelente: A identificação foi feita com alta precisão. Pode confiar no resultado!")
+                elif confianca > 70:
+                    print("🔎 Resultado provável. Considere verificar com outra imagem para maior precisão.")
+                else:
+                    print("⚠️ Confiança baixa: Tente uma imagem mais nítida ou com melhor iluminação.")
+
+                # Informação nutricional baseada na fruta
+                fruta_detectada = str(pred).lower()
+                if fruta_detectada in info_frutas:
+                    print("\n🧪 Informação nutricional:")
+                    print(info_frutas[fruta_detectada])
+                else:
+                    print("\nℹ️ Informação nutricional não encontrada para esta fruta.")
+
+            except PIL.UnidentifiedImageError:
+                print("🚫 Formato não suportado. Use JPG ou PNG.")
+            except Exception as e:
+                print(f"⚠️ Erro: {str(e)}")
+
+uploader = widgets.FileUpload(
+    description='Selecionar',
+    multiple=False
+)
+uploader.observe(processar_upload, names='data')
+
+display(widgets.VBox([
+    widgets.HTML("<h3 style='color:white'>🍉 Classificador de Frutas 🍌</h3>"),
+    widgets.Label("Envie uma foto de fruta para análise:"),
+    uploader,
+    out
+]))
+
+print("\n✅ Classificação concluída com sucesso!")
