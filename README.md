@@ -27,7 +27,7 @@ Desenvolver um classificador de frutas utilizando aprendizado de máquina superv
 
 ## ▶️ Como Executar/Testar o Projeto
 
-1. Acesse o [notebook no Google Colab](link_colab_aqui).
+1. Acesse o [notebook no Google Colab](https://colab.research.google.com/drive/1wsJFlocMAVBZhdKTGvYp7aboBf361ZF0?authuser=0).
 2. Monte seu Google Drive com o botão “Connect to Drive”.
 3. Garanta que o dataset de imagens esteja no caminho:  
    `/content/drive/MyDrive/frutas_dataset`
