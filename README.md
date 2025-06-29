@@ -40,8 +40,7 @@ Desenvolver um classificador de frutas utilizando aprendizado de máquina superv
 
 - O modelo foi treinado com aproximadamente 80 imagens (20  imagens em média por fruta).
 - Acurácia final obtida: (ex: **92%**) com baixa taxa de erro.
-- Exemplo de teste:
-![Exemplo](https://colab.research.google.com/drive/1Nm9zR2q8Bw1KgAigs3UNMfqVkHN7YLBU?authuser=0#scrollTo=llazsC_B9cdp)
+- Exemplo de teste: https://colab.research.google.com/drive/1Nm9zR2q8Bw1KgAigs3UNMfqVkHN7YLBU?authuser=0#scrollTo=llazsC_B9cdp
 
 ---
 
